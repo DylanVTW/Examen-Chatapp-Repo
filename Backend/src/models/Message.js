@@ -17,7 +17,11 @@ const messageSchema = new mongoose.Schema({
         default: null,
         trim: true,
         maxLength: 2000,
-    }
+    },
+    editedAt: {
+        type: Date,
+        default: null,
+    },
 },
 {
     timestamps: true,

@@ -14,16 +14,20 @@ function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
   const [error, setError] = useState(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingContent, setEditingContent] = useState("");
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
-  const authHeaders = useMemo(() => {
-    return {
+  const authHeaders = useMemo(
+    () => ({
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
-    };
-  }, [accessToken]);
+    }),
+    [accessToken],
+  );
 
   const loadUsers = async () => {
     const response = await fetch(`${API_BASE}/chat/users`, {
@@ -72,50 +76,28 @@ function ChatPage() {
   };
 
   const loadMessages = async (conversationId) => {
-    const response = await fetch(`${API_BASE}/chat/conversations/${conversationId}/messages`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+    setLoadingMessages(true);
+
+    const response = await fetch(
+      `${API_BASE}/chat/conversations/${conversationId}/messages`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        credentials: "include",
       },
-      credentials: "include",
-    });
+    );
 
     if (!response.ok) {
+      setLoadingMessages(false);
       throw new Error("Kan berichten niet laden");
     }
 
     const data = await response.json();
     setMessages(data);
-  };
+    setLoadingMessages(false);
 
-  const sendMessage = async (event) => {
-    event.preventDefault();
-    if (!messageText.trim() || !activeConversation?._id) {
-      return;
-    }
-
-    try {
-      setError(null);
-      const response = await fetch(
-        `${API_BASE}/chat/conversations/${activeConversation._id}/messages`,
-        {
-          method: "POST",
-          headers: authHeaders,
-          credentials: "include",
-          body: JSON.stringify({ content: messageText }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Kan bericht niet verzenden");
-      }
-
-      setMessageText("");
-      await loadMessages(activeConversation._id);
-      await loadConversations();
-    } catch (err) {
-      setError(err.message);
-    }
   };
 
   useEffect(() => {
@@ -133,7 +115,7 @@ function ChatPage() {
     };
 
     bootstrap();
-  }, [accessToken]);
+      }, [accessToken]);
 
   useEffect(() => {
     if (!activeConversation?._id) {
@@ -141,15 +123,16 @@ function ChatPage() {
       return;
     }
 
-    const loadConvMessages = async () => {
+    const hydrateMessages = async () => {
       try {
+        setError(null);
         await loadMessages(activeConversation._id);
       } catch (err) {
         setError(err.message);
       }
     };
 
-    loadConvMessages();
+    hydrateMessages();
   }, [activeConversation?._id]);
 
   useEffect(() => {
@@ -168,12 +151,66 @@ function ChatPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
+  const sendMessage = async (event) => {
+    event.preventDefault();
+    if (!activeConversation?._id || !messageText.trim()) {
+      return;
     }
-  }, [messages]);
+
+    try {
+      setError(null);
+      const response = await fetch(
+        `${API_BASE}/chat/conversations/${activeConversation._id}/messages`,
+        {
+          method: "POST",
+          headers: authHeaders,
+          credentials: "include",
+          body: JSON.stringify({ content: messageText }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Bericht versturen mislukt");
+      }
+
+      setMessageText("");
+      await loadConversations();
+      await loadMessages(activeConversation._id);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const saveEditedMessage = async (messageId) => {
+    if (!editingContent.trim() || !activeConversation?._id) {
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await fetch(
+        `${API_BASE}/chat/conversations/${activeConversation._id}/messages/${messageId}`,
+        {
+          method: "PATCH",
+          headers: authHeaders,
+          credentials: "include",
+          body: JSON.stringify({ content: editingContent }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Bericht bewerken mislukt");
+      }
+
+      setEditingMessageId(null);
+      setEditingContent("");
+      await loadConversations();
+      await loadMessages(activeConversation._id);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
 
   const getOtherParticipant = (conversation) => {
     return conversation.participants.find(
@@ -238,6 +275,12 @@ function ChatPage() {
     );
   };
 
+    const getMessageSenderLabel = (message) => {
+    const isOwn =
+      message.sender?._id === user?._id || message.sender?._id === user?.id;
+    return isOwn ? "Jij" : getUserLabel(message.sender);
+  };
+
   const usersWithoutConversation = useMemo(() => {
     const currentUserId = user?.id || user?._id;
     const currentUserEmail = user?.email;
@@ -264,6 +307,8 @@ function ChatPage() {
   const currentUserLabel = useMemo(() => {
     return getUserLabel(user);
   }, [user]);
+
+
 
   const handleLogout = async () => {
     try {
@@ -345,10 +390,10 @@ function ChatPage() {
       <aside
         style={{
           width: "320px",
-          borderRight: "1px solid #ddd",
+          borderRight: "1px solid var(--border)",
           padding: "16px",
           overflowY: "auto",
-          backgroundColor: "#f9fbfd",
+          backgroundColor: "var(--surface-1)",
         }}
       >
         <div
@@ -388,8 +433,8 @@ function ChatPage() {
                   top: "calc(100% + 8px)",
                   left: 0,
                   minWidth: "150px",
-                  backgroundColor: "white",
-                  border: "1px solid #d1d5db",
+                  backgroundColor: "var(--menu-bg)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: "8px",
                   boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
                   zIndex: 20,
@@ -407,7 +452,7 @@ function ChatPage() {
                     padding: "8px 10px",
                     borderRadius: "6px",
                     cursor: "pointer",
-                    color: "#111827",
+                    color: "var(--text-h)",
                     fontWeight: 600,
                   }}
                 >
@@ -417,10 +462,10 @@ function ChatPage() {
             ) : null}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, color: "#000" }}>
+            <div style={{ fontWeight: 700, color: "var(--text-h)" }}>
               {currentUserLabel}{" "}
             </div>
-            <small style={{ color: "#000" }}>Logged in</small>
+            <small style={{ color: "var(--text-h)" }}>Logged in</small>
           </div>
         </div>
         <div
@@ -431,12 +476,12 @@ function ChatPage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: "#000" }}>Chats</h2>
+            <h2 style={{ margin: 0, color: "var(--text-h)" }}>Chats</h2>
           </div>
           <button onClick={handleLogout}>Uitloggen</button>
         </div>
 
-        <h3 style={{ marginBottom: "8px", color: "#000" }}>Gesprekken</h3>
+        <h3 style={{ marginBottom: "8px", color: "var(--text-h)" }}>Gesprekken</h3>
         <div>
           {conversations.map((conversation) => {
             const other = getOtherParticipant(conversation);
@@ -451,9 +496,9 @@ function ChatPage() {
                   marginBottom: "8px",
                   padding: "10px",
                   borderRadius: "8px",
-                  border: isActive ? "1px solid #0969da" : "1px solid #ddd",
-                  backgroundColor: isActive ? "#eaf3ff" : "white",
-                  color: "#000",
+                  border: isActive ? "1px solid var(--border-primary)" : "1px solid var(--border)",
+                  backgroundColor: isActive ? "var(--accent-bg)" : "var(--surface-3)",
+                  color: "var(--text-h)",
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
@@ -461,13 +506,13 @@ function ChatPage() {
               >
                 {renderAvatar(other, 34)}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 600, color: "#000" }}>
+                  <div style={{ fontWeight: 600, color: "var(--text-h)" }}>
                     {getUserLabel(other)}
                   </div>
                   <div
                     style={{
                       fontSize: "12px",
-                      color: "#000",
+                      color: "var(--text)",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -481,7 +526,7 @@ function ChatPage() {
           })}
         </div>
 
-        <h3 style={{ marginTop: "18px", marginBottom: "8px", color: "#000" }}>
+        <h3 style={{ marginTop: "18px", marginBottom: "8px", color: "var(--text-h)" }}>
           Start nieuw gesprek
         </h3>
         <div>
@@ -495,9 +540,9 @@ function ChatPage() {
                 marginBottom: "8px",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid #ddd",
-                backgroundColor: "white",
-                color: "#000",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface-3)",
+                color: "var(--text-h)",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
@@ -508,7 +553,7 @@ function ChatPage() {
             </button>
           ))}
           {usersWithoutConversation.length === 0 ? (
-            <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: "14px" }}>
               Je hebt al met alle gebruikers een gesprek gestart.
             </p>
           ) : null}
@@ -517,10 +562,10 @@ function ChatPage() {
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {activeConversation ? (
-          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <>
             <div
               style={{
-                borderBottom: "1px solid #e5e7eb",
+                borderBottom: "1px solid var(--border)",
                 padding: "12px 16px",
                 display: "flex",
                 alignItems: "center",
@@ -539,95 +584,139 @@ function ChatPage() {
                 Sluit gesprek af
               </button>
             </div>
-            
+
             <div
               ref={messagesContainerRef}
               style={{
                 flex: 1,
-                padding: "24px",
-                backgroundColor: "#f3f4f6",
                 overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
+                padding: "16px",
+                backgroundColor: "var(--surface-2)",
               }}
             >
-              {messages.length === 0 ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                  <p style={{ color: "#6b7280", fontSize: "16px", textAlign: "center", margin: 0 }}>Nog geen berichten in dit gesprek.</p>
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const isOwnMessage = msg.sender?._id === user?._id || msg.sender?._id === user?.id;
-                  return (
+              {loadingMessages ? <p>Berichten laden...</p> : null}
+              {!loadingMessages && messages.length === 0 ? (
+                <p>Nog geen berichten in dit gesprek.</p>
+              ) : null}
+
+              {messages.map((message) => {
+                const isOwn =
+                  message.sender?._id === user?._id ||
+                  message.sender?._id === user?.id;
+                const isEditing = editingMessageId === message._id;
+                const isReadByOther =
+                  activeConversation.participants.length > 1
+                    ? message.readBy?.length >= 2
+                    : message.readBy?.length > 0;
+
+                return (
+                  <div
+                    key={message._id}
+                    style={{
+                      marginBottom: "10px",
+                      display: "flex",
+                      justifyContent: isOwn ? "flex-end" : "flex-start",
+                    }}
+                  >
                     <div
-                      key={msg._id}
                       style={{
-                        display: "flex",
-                        justifyContent: isOwnMessage ? "flex-end" : "flex-start",
-                        marginBottom: "8px",
+                        maxWidth: "70%",
+                        padding: "10px",
+                        borderRadius: "10px",
+                        backgroundColor: isOwn ? "var(--surface-own)" : "var(--surface-3)",
+                        border: "1px solid var(--border-strong)",
+                        textAlign: isOwn ? "right" : "left",
                       }}
                     >
-                      <div
-                        style={{
-                          maxWidth: "70%",
-                          padding: "10px 16px",
-                          borderRadius: "12px",
-                          backgroundColor: isOwnMessage ? "#0969da" : "#e5e7eb",
-                          color: isOwnMessage ? "#fff" : "#000",
-                          wordWrap: "break-word",
-                        }}
-                      >
-                        {msg.content}
-                      </div>
+                      {isEditing ? (
+                        <>
+                          <textarea
+                            value={editingContent}
+                            onChange={(event) =>
+                              setEditingContent(event.target.value)
+                            }
+                            rows={3}
+                            style={{ width: "100%", marginBottom: "8px" }}
+                          />
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                              onClick={() => saveEditedMessage(message._id)}
+                            >
+                              Opslaan
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingMessageId(null);
+                                setEditingContent("");
+                              }}
+                            >
+                              Annuleren
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div
+                            style={{
+                              marginBottom: "6px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                              color: "var(--muted)",
+                              display: "flex",
+                              justifyContent: isOwn ? "flex-end" : "flex-start",
+                            }}
+                          >
+                            {getMessageSenderLabel(message)}
+                          </div>
+                        </>
+                      )}
+
+                      {isOwn && !isEditing ? (
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            display: "flex",
+                            gap: "8px",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              setEditingMessageId(message._id);
+                              setEditingContent(message.content || "");
+                            }}
+                          >
+                            Bewerken
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
-                  );
-                })
-              )}
+                  </div>
+                );
+              })}
             </div>
 
             <form
               onSubmit={sendMessage}
               style={{
+                borderTop: "1px solid var(--border)",
+                padding: "12px",
                 display: "flex",
                 gap: "8px",
-                padding: "16px 24px",
-                borderTop: "1px solid #e5e7eb",
-                backgroundColor: "#fff",
               }}
             >
               <input
                 type="text"
-                placeholder="Typ je bericht..."
                 value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: "10px 16px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  fontFamily: "inherit",
-                }}
+                onChange={(event) => setMessageText(event.target.value)}
+                placeholder="Typ je bericht..."
+                style={{ flex: 1, padding: "10px" }}
               />
-              <button
-                type="submit"
-                style={{
-                  padding: "10px 16px",
-                  backgroundColor: "#0969da",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                }}
-              >
-                Verstuur
-              </button>
+              <button type="submit">Verstuur</button>
             </form>
-
-          </div>
+          </>
         ) : (
           <div style={{ padding: "30px" }}>
             <h2>Welkom in je chatapp</h2>
@@ -642,9 +731,9 @@ function ChatPage() {
           <div
             style={{
               padding: "10px 16px",
-              color: "#b91c1c",
-              borderTop: "1px solid #fecaca",
-              backgroundColor: "#fef2f2",
+              color: "var(--danger-text)",
+              borderTop: "1px solid var(--danger-border)",
+              backgroundColor: "var(--danger-bg)",
             }}
           >
             {error}

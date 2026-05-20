@@ -7,6 +7,7 @@ import {
   deleteConversation,
   getMessages,
   sendMessage,
+  editMessage,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.post("/conversations", startConversation);
 router.delete("/conversations/:conversationId", deleteConversation);
 router.get("/conversations/:conversationId/messages", getMessages);
 router.post("/conversations/:conversationId/messages", sendMessage);
+router.patch("/conversations/:conversationId/messages/:messageId", editMessage);
 
 export default router;
