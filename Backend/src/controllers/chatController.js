@@ -179,5 +179,38 @@ export const editMessage = async (req, res) => {
    }
 };
 
+export const deleteMessage = async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+
+    const conversation = await ensureParticipants(conversationId, req.user.id);
+    if (!conversation) {
+      return res.status(404).json({ message: "Gesprek niet gevonden" });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message || String(message.conversation) !== String(conversationId)) {
+      return res.status(404).json({ message: "Bericht niet gevonden" });
+    }
+
+    if (String(message.sender) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Je kunt alleen je eigen berichten verwijderen" });
+    }
+
+    if (message.isDeleted) {
+      return res.status(400).json({ message: "Bericht is al verwijderd" });
+    }
+
+    message.content = "Bericht verwijderd";
+    message.isDeleted = true;
+    message.deletedAt = new Date();
+    await message.save();
+
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
 
 

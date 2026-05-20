@@ -29,6 +29,10 @@ function ChatPage() {
     [accessToken],
   );
 
+  const getAuthHeader = () => ({
+    Authorization: `Bearer ${isValidToken ? accessToken : ""}`,
+  });
+
   const loadUsers = async () => {
     const response = await fetch(`${API_BASE}/chat/users`, {
       method: "GET",
@@ -208,6 +212,32 @@ function ChatPage() {
       await loadMessages(activeConversation._id);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    if (!activeConversation?._id) {
+      return;
+    }
+    try {
+      setError(null);
+      const response = await fetch(
+        `${API_BASE}/chat/conversations/${activeConversation._id}/messages/${messageId}`,
+        {
+          method: "DELETE",
+          headers: authHeaders,
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Bericht verwijderen mislukt");
+      }
+
+      await loadConversations();
+      await loadMessages(activeConversation._id);
+    } catch (error) {
+      setError(error.message);
     }
   };
 
@@ -656,6 +686,29 @@ function ChatPage() {
                         </>
                       ) : (
                         <>
+                        <div
+                            style={{
+                              marginBottom: "6px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                              color: "var(--muted)",
+                              display: "flex",
+                              justifyContent: isOwn ? "flex-end" : "flex-start",
+                            }}
+                          >
+                            {getMessageSenderLabel(message)}
+                          </div>
+                          <div style={{ marginBottom: "6px" }}>
+                            {message.isDeleted ? (
+                              <em style={{ color: "var(--muted)" }}>
+                                Dit bericht is verwijderd
+                              </em>
+                            ) : (
+                              <>{message.content}</>
+                            )}
+                          </div>
                           <div
                             style={{
                               marginBottom: "6px",
@@ -673,7 +726,7 @@ function ChatPage() {
                         </>
                       )}
 
-                      {isOwn && !isEditing ? (
+                      {isOwn && !isEditing && !message.isDeleted ? (
                         <div
                           style={{
                             marginTop: "8px",
@@ -689,6 +742,9 @@ function ChatPage() {
                             }}
                           >
                             Bewerken
+                          </button>
+                          <button onClick={() => deleteMessage(message._id)}>
+                            Verwijderen
                           </button>
                         </div>
                       ) : null}
