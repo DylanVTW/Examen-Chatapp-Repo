@@ -29,9 +29,19 @@ function ChatPage() {
     [accessToken],
   );
 
-  const getAuthHeader = () => ({
-    Authorization: `Bearer ${isValidToken ? accessToken : ""}`,
+  const formatDate = (isoValue) => {
+  if (!isoValue) {
+    return "";
+  }
+
+  return new Date(isoValue).toLocaleString("nl-NL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
+};
 
   const loadUsers = async () => {
     const response = await fetch(`${API_BASE}/chat/users`, {
@@ -104,6 +114,16 @@ function ChatPage() {
 
   };
 
+  const scrollToBottom = (smooth = false) => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    try {
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    } catch (e) {
+      el.scrollTop = el.scrollHeight;
+    }
+  };
+
   useEffect(() => {
     if (!accessToken) {
       return;
@@ -138,6 +158,13 @@ function ChatPage() {
 
     hydrateMessages();
   }, [activeConversation?._id]);
+
+  useEffect(() => {
+    if (!messagesContainerRef.current) return;
+    // allow DOM to update then scroll
+    const id = setTimeout(() => scrollToBottom(true), 50);
+    return () => clearTimeout(id);
+  }, [messages.length]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -708,6 +735,15 @@ function ChatPage() {
                             ) : (
                               <>{message.content}</>
                             )}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                            Verzonden: {formatDate(message.createdAt)}
+                            {message.editedAt
+                              ? ` | Bewerkt: ${formatDate(message.editedAt)}`
+                              : ""}
+                            {isOwn
+                              ? ` | ${isReadByOther ? "Gelezen" : "Verzonden"}`
+                              : ""}
                           </div>
                           <div
                             style={{

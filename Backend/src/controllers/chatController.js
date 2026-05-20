@@ -212,5 +212,31 @@ export const deleteMessage = async (req, res) => {
   }
 }
 
+export const markMessageRead = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    const conversation = await ensureParticipants(conversationId, req.user.id);
+    if (!conversation) {
+      return res.status(404).json({ message: "Gesprek niet gevonden" });
+    }
+
+    await Message.updateMany(
+      {
+        conversation: conversationId,
+        sender: { $ne: req.user._id },
+        readBy: { $ne: req.user._id },
+      },
+      {
+        $push: { readBy: req.user._id },
+      },
+    );
+
+    res.status(200).json({ message: "Berichten gemarkeerd als gelezen" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 
