@@ -11,9 +11,12 @@ function ChatPage() {
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState("");
   const [error, setError] = useState(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const authHeaders = useMemo(() => {
     return {
@@ -22,7 +25,7 @@ function ChatPage() {
     };
   }, [accessToken]);
 
-    const loadUsers = async () => {
+  const loadUsers = async () => {
     const response = await fetch(`${API_BASE}/chat/users`, {
       method: "GET",
       headers: {
@@ -30,9 +33,11 @@ function ChatPage() {
       },
       credentials: "include",
     });
+
     if (!response.ok) {
-      throw new Error("Kan geen gebruikers laden");
+      throw new Error("Kan gebruikers niet laden");
     }
+
     const data = await response.json();
     setUsers(data);
   };
@@ -45,12 +50,13 @@ function ChatPage() {
       },
       credentials: "include",
     });
+
     if (!response.ok) {
-      throw new Error("Kan geen gesprekken laden");
+      throw new Error("Kan gesprekken niet laden");
     }
 
-      const data = await response.json();
-      setConversations(data);
+    const data = await response.json();
+    setConversations(data);
 
     if (
       activeConversation &&
@@ -64,6 +70,111 @@ function ChatPage() {
       setActiveConversation(data[0]);
     }
   };
+
+  const loadMessages = async (conversationId) => {
+    const response = await fetch(`${API_BASE}/chat/conversations/${conversationId}/messages`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error("Kan berichten niet laden");
+    }
+
+    const data = await response.json();
+    setMessages(data);
+  };
+
+  const sendMessage = async (event) => {
+    event.preventDefault();
+    if (!messageText.trim() || !activeConversation?._id) {
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await fetch(
+        `${API_BASE}/chat/conversations/${activeConversation._id}/messages`,
+        {
+          method: "POST",
+          headers: authHeaders,
+          credentials: "include",
+          body: JSON.stringify({ content: messageText }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Kan bericht niet verzenden");
+      }
+
+      setMessageText("");
+      await loadMessages(activeConversation._id);
+      await loadConversations();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
+
+    const bootstrap = async () => {
+      try {
+        setError(null);
+        await Promise.all([loadUsers(), loadConversations()]);
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+
+    bootstrap();
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!activeConversation?._id) {
+      setMessages([]);
+      return;
+    }
+
+    const loadConvMessages = async () => {
+      try {
+        await loadMessages(activeConversation._id);
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+
+    loadConvMessages();
+  }, [activeConversation?._id]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   const getOtherParticipant = (conversation) => {
     return conversation.participants.find(
       (participant) =>
@@ -222,23 +333,6 @@ function ChatPage() {
       setError(fetchError.message);
     }
   };
-
-  useEffect(() => {
-    if (!accessToken) {
-      return;
-    }
-
-    const init = async () => {
-      setError(null);
-      try {
-        await Promise.all([loadUsers(), loadConversations()]);
-      } catch (fetchError) {
-        setError(fetchError.message);
-      }
-    };
-
-    init();
-  }, [accessToken]);
 
   return (
     <div
@@ -423,20 +517,116 @@ function ChatPage() {
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {activeConversation ? (
-          <div style={{ padding: "24px" }}>
-            <h2 style={{ marginTop: 0 }}>
-              Gesprek met {getUserLabel(getOtherParticipant(activeConversation))}
-            </h2>
-            <p style={{ marginBottom: "16px", color: "#4b5563" }}>
-              Berichten versturen is uitgeschakeld. Je kunt alleen gesprekken
-              starten en afsluiten.
-            </p>
-            <button
-              onClick={closeConversation}
-              style={{ backgroundColor: "#f3f4f6", color: "#000" }}
+          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+            <div
+              style={{
+                borderBottom: "1px solid #e5e7eb",
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
             >
-              Sluit gesprek af
-            </button>
+              <strong>
+                Gesprek met{" "}
+                {getUserLabel(getOtherParticipant(activeConversation))}
+              </strong>
+              <button
+                onClick={closeConversation}
+                style={{ backgroundColor: "var(--surface-3)", color: "var(--text-h)" }}
+              >
+                Sluit gesprek af
+              </button>
+            </div>
+            
+            <div
+              ref={messagesContainerRef}
+              style={{
+                flex: 1,
+                padding: "24px",
+                backgroundColor: "#f3f4f6",
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {messages.length === 0 ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                  <p style={{ color: "#6b7280", fontSize: "16px", textAlign: "center", margin: 0 }}>Nog geen berichten in dit gesprek.</p>
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isOwnMessage = msg.sender?._id === user?._id || msg.sender?._id === user?.id;
+                  return (
+                    <div
+                      key={msg._id}
+                      style={{
+                        display: "flex",
+                        justifyContent: isOwnMessage ? "flex-end" : "flex-start",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          maxWidth: "70%",
+                          padding: "10px 16px",
+                          borderRadius: "12px",
+                          backgroundColor: isOwnMessage ? "#0969da" : "#e5e7eb",
+                          color: isOwnMessage ? "#fff" : "#000",
+                          wordWrap: "break-word",
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <form
+              onSubmit={sendMessage}
+              style={{
+                display: "flex",
+                gap: "8px",
+                padding: "16px 24px",
+                borderTop: "1px solid #e5e7eb",
+                backgroundColor: "#fff",
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Typ je bericht..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontFamily: "inherit",
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: "#0969da",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
+                Verstuur
+              </button>
+            </form>
+
           </div>
         ) : (
           <div style={{ padding: "30px" }}>

@@ -1,5 +1,6 @@
 import Conversation from "../models/Conversation.js";
 import User from "../models/User.js";
+import Message from "../models/Message.js";
 
 const ensureParticipants = async (conversationId, userId) => {
   return await Conversation.findOne({
@@ -92,3 +93,54 @@ export const deleteConversation =  async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+export const getMessages = async (req, res) => {
+    try {
+        const { conversationId } = req.params;
+
+        const conversation = await ensureParticipants(conversationId, req.user.id);
+        if (!conversation) {
+            return res.status(404).json({ message: "Gesprek niet gevonden" });
+        }
+
+        const messages = await Message.find({ conversation: conversationId })
+          .populate("sender", "_id username email profileImage")
+          .sort({ createdAt: 1 });
+
+        res.status(200).json(messages);
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const sendMessage = async (req, res) => {
+    try {
+        const { conversationId } = req.params;
+        const { content } = req.body;
+        const trimmedContent = typeof content === "string" ? content.trim() : "";
+
+        if (!trimmedContent) {
+            return res.status(400).json({ message: "Bericht mag niet leeg zijn" });
+        }
+
+        const conversation = await ensureParticipants(conversationId, req.user.id);
+        if (!conversation) {
+            return res.status(404).json({ message: "Gesprek niet gevonden" });
+        }
+
+        const message = await Message.create({
+            conversation: conversationId,
+            sender: req.user._id,
+            content: trimmedContent,
+        });
+
+        conversation.lastMessageAt = new Date();
+        await conversation.save();
+
+        const populated = await Message.findById(message._id).populate("sender", "_id username email profileImage");
+        res.status(201).json(populated);
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
