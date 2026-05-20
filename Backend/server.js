@@ -3,6 +3,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import authRoutes from './src/routes/authRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 6000;
@@ -35,6 +36,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
 
 const startServer = async () => {
     try {

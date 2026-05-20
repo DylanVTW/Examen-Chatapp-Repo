@@ -2,25 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "http://localhost:5000/api";
-
-const formatDate = (isoValue) => {
-  if (!isoValue) {
-    return "";
-  }
-
-  return new Date(isoValue).toLocaleString("nl-NL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+const API_BASE = "/api";
 
 function ChatPage() {
   const { accessToken, user, logout } = useAuth();
   const navigate = useNavigate();
+
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -35,7 +22,7 @@ function ChatPage() {
     };
   }, [accessToken]);
 
-  const loadUsers = async () => {
+    const loadUsers = async () => {
     const response = await fetch(`${API_BASE}/chat/users`, {
       method: "GET",
       headers: {
@@ -51,7 +38,7 @@ function ChatPage() {
   };
 
   const loadConversations = async () => {
-    const response = await fetch(`${API_BASE}/chat/`, {
+    const response = await fetch(`${API_BASE}/chat/conversations`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -62,8 +49,8 @@ function ChatPage() {
       throw new Error("Kan geen gesprekken laden");
     }
 
-    const data = await response.json();
-    setConversations(data);
+      const data = await response.json();
+      setConversations(data);
 
     if (
       activeConversation &&
@@ -96,7 +83,7 @@ function ChatPage() {
             width: `${size}px`,
             height: `${size}px`,
             borderRadius: "50%",
-            backgroundColor: "var(--border-strong)",
+            backgroundColor: "#d1d5db",
             flexShrink: 0,
           }}
         />
@@ -125,8 +112,8 @@ function ChatPage() {
           width: `${size}px`,
           height: `${size}px`,
           borderRadius: "50%",
-          backgroundColor: "var(--border-strong)",
-          color: "var(--text-h)",
+          backgroundColor: "#d1d5db",
+          color: "#111827",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -184,6 +171,75 @@ function ChatPage() {
     navigate("/profile");
   };
 
+  const openOrStartConversation = async (targetUserId) => {
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE}/chat/conversations`, {
+        method: "POST",
+        headers: authHeaders,
+        credentials: "include",
+        body: JSON.stringify({ targetUserId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Kan gesprek niet starten");
+      }
+
+      const conversation = await response.json();
+      setActiveConversation(conversation);
+      await loadConversations();
+    } catch (fetchError) {
+      setError(fetchError.message);
+    }
+  };
+
+  const closeConversation = async () => {
+    if (!activeConversation?._id) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/chat/conversations/${activeConversation._id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Kan gesprek niet afsluiten");
+      }
+
+      setActiveConversation(null);
+      await loadConversations();
+    } catch (fetchError) {
+      setError(fetchError.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
+
+    const init = async () => {
+      setError(null);
+      try {
+        await Promise.all([loadUsers(), loadConversations()]);
+      } catch (fetchError) {
+        setError(fetchError.message);
+      }
+    };
+
+    init();
+  }, [accessToken]);
+
   return (
     <div
       style={{
@@ -195,10 +251,10 @@ function ChatPage() {
       <aside
         style={{
           width: "320px",
-          borderRight: "1px solid var(--border)",
+          borderRight: "1px solid #ddd",
           padding: "16px",
           overflowY: "auto",
-          backgroundColor: "var(--surface-1)",
+          backgroundColor: "#f9fbfd",
         }}
       >
         <div
@@ -238,8 +294,8 @@ function ChatPage() {
                   top: "calc(100% + 8px)",
                   left: 0,
                   minWidth: "150px",
-                  backgroundColor: "var(--menu-bg)",
-                  border: "1px solid var(--border-strong)",
+                  backgroundColor: "white",
+                  border: "1px solid #d1d5db",
                   borderRadius: "8px",
                   boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
                   zIndex: 20,
@@ -257,7 +313,7 @@ function ChatPage() {
                     padding: "8px 10px",
                     borderRadius: "6px",
                     cursor: "pointer",
-                    color: "var(--text-h)",
+                    color: "#111827",
                     fontWeight: 600,
                   }}
                 >
@@ -267,10 +323,10 @@ function ChatPage() {
             ) : null}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, color: "var(--text-h)" }}>
+            <div style={{ fontWeight: 700, color: "#000" }}>
               {currentUserLabel}{" "}
             </div>
-            <small style={{ color: "var(--text-h)" }}>Logged in</small>
+            <small style={{ color: "#000" }}>Logged in</small>
           </div>
         </div>
         <div
@@ -281,12 +337,12 @@ function ChatPage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: "var(--text-h)" }}>Chats</h2>
+            <h2 style={{ margin: 0, color: "#000" }}>Chats</h2>
           </div>
           <button onClick={handleLogout}>Uitloggen</button>
         </div>
 
-        <h3 style={{ marginBottom: "8px", color: "var(--text-h)" }}>Gesprekken</h3>
+        <h3 style={{ marginBottom: "8px", color: "#000" }}>Gesprekken</h3>
         <div>
           {conversations.map((conversation) => {
             const other = getOtherParticipant(conversation);
@@ -301,9 +357,9 @@ function ChatPage() {
                   marginBottom: "8px",
                   padding: "10px",
                   borderRadius: "8px",
-                  border: isActive ? "1px solid var(--border-primary)" : "1px solid var(--border)",
-                  backgroundColor: isActive ? "var(--accent-bg)" : "var(--surface-3)",
-                  color: "var(--text-h)",
+                  border: isActive ? "1px solid #0969da" : "1px solid #ddd",
+                  backgroundColor: isActive ? "#eaf3ff" : "white",
+                  color: "#000",
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
@@ -311,13 +367,13 @@ function ChatPage() {
               >
                 {renderAvatar(other, 34)}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                  <div style={{ fontWeight: 600, color: "#000" }}>
                     {getUserLabel(other)}
                   </div>
                   <div
                     style={{
                       fontSize: "12px",
-                      color: "var(--text)",
+                      color: "#000",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -331,7 +387,7 @@ function ChatPage() {
           })}
         </div>
 
-        <h3 style={{ marginTop: "18px", marginBottom: "8px", color: "var(--text-h)" }}>
+        <h3 style={{ marginTop: "18px", marginBottom: "8px", color: "#000" }}>
           Start nieuw gesprek
         </h3>
         <div>
@@ -345,9 +401,9 @@ function ChatPage() {
                 marginBottom: "8px",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--surface-3)",
-                color: "var(--text-h)",
+                border: "1px solid #ddd",
+                backgroundColor: "white",
+                color: "#000",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
@@ -358,7 +414,7 @@ function ChatPage() {
             </button>
           ))}
           {usersWithoutConversation.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
               Je hebt al met alle gebruikers een gesprek gestart.
             </p>
           ) : null}
@@ -367,234 +423,21 @@ function ChatPage() {
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {activeConversation ? (
-          <>
-            <div
-              style={{
-                borderBottom: "1px solid var(--border)",
-                padding: "12px 16px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px",
-              }}
+          <div style={{ padding: "24px" }}>
+            <h2 style={{ marginTop: 0 }}>
+              Gesprek met {getUserLabel(getOtherParticipant(activeConversation))}
+            </h2>
+            <p style={{ marginBottom: "16px", color: "#4b5563" }}>
+              Berichten versturen is uitgeschakeld. Je kunt alleen gesprekken
+              starten en afsluiten.
+            </p>
+            <button
+              onClick={closeConversation}
+              style={{ backgroundColor: "#f3f4f6", color: "#000" }}
             >
-              <strong>
-                Gesprek met{" "}
-                {getUserLabel(getOtherParticipant(activeConversation))}
-              </strong>
-              <button
-                onClick={closeConversation}
-                style={{ backgroundColor: "var(--surface-3)", color: "var(--text-h)" }}
-              >
-                Sluit gesprek af
-              </button>
-            </div>
-
-            <div
-              ref={messagesContainerRef}
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "16px",
-                backgroundColor: "var(--surface-2)",
-              }}
-            >
-              {loadingMessages ? <p>Berichten laden...</p> : null}
-              {!loadingMessages && messages.length === 0 ? (
-                <p>Nog geen berichten in dit gesprek.</p>
-              ) : null}
-
-              {messages.map((message) => {
-                const isOwn =
-                  message.sender?._id === user?._id ||
-                  message.sender?._id === user?.id;
-                const isEditing = editingMessageId === message._id;
-                const isReadByOther =
-                  activeConversation.participants.length > 1
-                    ? message.readBy?.length >= 2
-                    : message.readBy?.length > 0;
-
-                return (
-                  <div
-                    key={message._id}
-                    style={{
-                      marginBottom: "10px",
-                      display: "flex",
-                      justifyContent: isOwn ? "flex-end" : "flex-start",
-                    }}
-                  >
-                    <div
-                      style={{
-                        maxWidth: "70%",
-                        padding: "10px",
-                        borderRadius: "10px",
-                        backgroundColor: isOwn ? "var(--surface-own)" : "var(--surface-3)",
-                        border: "1px solid var(--border-strong)",
-                        textAlign: isOwn ? "right" : "left",
-                      }}
-                    >
-                      {isEditing ? (
-                        <>
-                          <textarea
-                            value={editingContent}
-                            onChange={(event) =>
-                              setEditingContent(event.target.value)
-                            }
-                            rows={3}
-                            style={{ width: "100%", marginBottom: "8px" }}
-                          />
-                          <div style={{ display: "flex", gap: "8px" }}>
-                            <button
-                              onClick={() => saveEditedMessage(message._id)}
-                            >
-                              Opslaan
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingMessageId(null);
-                                setEditingContent("");
-                              }}
-                            >
-                              Annuleren
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div
-                            style={{
-                              marginBottom: "6px",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.04em",
-                              color: "var(--muted)",
-                              display: "flex",
-                              justifyContent: isOwn ? "flex-end" : "flex-start",
-                            }}
-                          >
-                            {getMessageSenderLabel(message)}
-                          </div>
-                          <div style={{ marginBottom: "6px" }}>
-                            {message.isDeleted ? (
-                              <em style={{ color: "var(--muted)" }}>
-                                Bericht verwijderd
-                              </em>
-                            ) : (
-                              <>
-                                {message.mediaUrl ? (
-                                  <a
-                                    href={message.mediaUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{
-                                          display: "inline-block",
-                                          marginBottom: message.content ? "8px" : 0,
-                                    }}
-                                  >
-                                    <img
-                                      src={message.mediaUrl}
-                                      alt={
-                                        message.mediaOriginalName ||
-                                        "Gedeelde afbeelding"
-                                      }
-                                      style={{
-                                        maxWidth: "260px",
-                                        maxHeight: "260px",
-                                        width: "100%",
-                                        borderRadius: "8px",
-                                        border: "1px solid var(--border)",
-                                        objectFit: "cover",
-                                      }}
-                                    />
-                                  </a>
-                                ) : null}
-                                {message.content ? <div>{message.content}</div> : null}
-                              </>
-                            )}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>
-                            Verzonden: {formatDate(message.createdAt)}
-                            {message.editedAt
-                              ? ` | Bewerkt: ${formatDate(message.editedAt)}`
-                              : ""}
-                            {isOwn
-                              ? ` | ${isReadByOther ? "Gelezen" : "Verzonden"}`
-                              : ""}
-                          </div>
-                        </>
-                      )}
-
-                      {isOwn && !message.isDeleted && !isEditing ? (
-                        <div
-                          style={{
-                            marginTop: "8px",
-                            display: "flex",
-                            gap: "8px",
-                            justifyContent: "flex-end",
-                          }}
-                        >
-                          <button
-                            onClick={() => {
-                              setEditingMessageId(message._id);
-                              setEditingContent(message.content);
-                            }}
-                          >
-                            Bewerken
-                          </button>
-                          <button onClick={() => removeMessage(message._id)}>
-                            Verwijderen
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <form
-              onSubmit={sendMessage}
-              style={{
-                borderTop: "1px solid var(--border)",
-                padding: "12px",
-                display: "flex",
-                gap: "8px",
-              }}
-            >
-
-<input
-ref={mediaInputRef}
-type="file"
-accept="image/*"
-onChange={handleMediaSelected}
-style={{ display: "none" }}
-/>
-
-              <input
-                type="text"
-                value={messageText}
-                onChange={(event) => setMessageText(event.target.value)}
-                placeholder="Typ je bericht..."
-                style={{ flex: 1, padding: "10px" }}
-              />
-
-              <button
-              type="button"
-              onClick={handleMediaButtonClick}
-              disabled={isUploadingMedia}
-              aria-label="Afbeelding of GIF delen"
-              title="Afbeelding of GIF delen"
-              style={{width: "42px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "var(--surface-3)",}}>
-                📎
-                  </button>
-              <button type="submit">Verstuur</button>
-            </form>
-          </>
+              Sluit gesprek af
+            </button>
+          </div>
         ) : (
           <div style={{ padding: "30px" }}>
             <h2>Welkom in je chatapp</h2>
@@ -609,9 +452,9 @@ style={{ display: "none" }}
           <div
             style={{
               padding: "10px 16px",
-              color: "var(--danger-text)",
-              borderTop: "1px solid var(--danger-border)",
-              backgroundColor: "var(--danger-bg)",
+              color: "#b91c1c",
+              borderTop: "1px solid #fecaca",
+              backgroundColor: "#fef2f2",
             }}
           >
             {error}
