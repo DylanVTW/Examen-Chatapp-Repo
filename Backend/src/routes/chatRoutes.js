@@ -1,0 +1,29 @@
+import express from "express";
+import { requireAuth } from "../middleware/requireAuth.js";
+import {
+  listUsers,
+  startConversation,
+  listConversations,
+  deleteConversation,
+  getMessages,
+  sendMessage,
+  editMessage,
+  deleteMessage,
+  markMessageRead
+} from "../controllers/chatController.js";
+
+const router = express.Router();
+
+router.use(requireAuth);
+
+router.get("/users", listUsers);
+router.get("/conversations", listConversations);
+router.post("/conversations", startConversation);
+router.delete("/conversations/:conversationId", deleteConversation);
+router.get("/conversations/:conversationId/messages", getMessages);
+router.post("/conversations/:conversationId/messages", sendMessage);
+router.patch("/conversations/:conversationId/messages/:messageId", editMessage);
+router.delete("/conversations/:conversationId/messages/:messageId", deleteMessage);
+router.post("/conversations/:conversationId/messages/:messageId/read", markMessageRead);
+
+export default router;
