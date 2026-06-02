@@ -48,7 +48,7 @@ function UserProfile() {
 }, [accessToken, refreshTrigger]);
 
 if (loading) {
-    return <div style={{padding: "20px"}}>Laden...</div>;
+    return <div style={{padding: "20px", color: "#000", backgroundColor: "#fff"}}>Laden...</div>;
 }
 
 if (error) {
@@ -56,15 +56,15 @@ if (error) {
 }
 
 return (
-    <div style={{ maxWidth: "600px", margin: "50px auto", padding: "20px" }}>
-      <h1>Mijn Profiel</h1>
+    <div style={{ maxWidth: "600px", margin: "50px auto", padding: "20px", backgroundColor: "#fff", color: "#000" }}>
+      <h1 style={{ color: "#000" }}>Mijn Profiel</h1>
       <button
         onClick={() => navigate("/chat")}
         style={{
           padding: "10px 20px",
           backgroundColor: "#007bff",
-          color: "white",
-          border: "none",
+          color: "#000",
+          border: "1px solid #000",
           borderRadius: "4px",
           cursor: "pointer",
           marginBottom: "30px",
@@ -78,11 +78,13 @@ return (
           style={{
             marginBottom: "30px",
             padding: "20px",
-            border: "1px solid black",
+            border: "1px solid #000",
+            backgroundColor: "#fff",
+            color: "#000",
             borderRadius: "8px",
           }}
         >
-          <h2>Profielfoto</h2>
+          <h2 style={{ color: "#000" }}>Profielfoto</h2>
           {profileUser.profileImage ? (
             <img
               src={profileUser.profileImage}
@@ -92,6 +94,8 @@ return (
                 maxHeight: "200px",
                 borderRadius: "8px",
                 marginBottom: "20px",
+                border: "1px solid #000",
+                
               }}
             />
           ) : (
@@ -99,19 +103,21 @@ return (
               style={{
                 width: "200px",
                 height: "200px",
-                backgroundColor: "lightgray",
+                backgroundColor: "#fff",
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: "20px",
+                border: "1px solid #000",
+                color: "#000",
               }}
             >
               Geen profielfoto
             </div>
           )}
 
-          <h2>Persoonlijke Informatie</h2>
+          <h2 style={{ color: "#000" }}>Persoonlijke Informatie</h2>
           <p>
             <strong>Gebruikersnaam:</strong> {profileUser.username}
           </p>

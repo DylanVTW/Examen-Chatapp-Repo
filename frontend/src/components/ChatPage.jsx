@@ -447,10 +447,10 @@ function ChatPage() {
       <aside
         style={{
           width: "320px",
-          borderRight: "1px solid var(--border)",
+          borderRight: "1px solid #ddd",
           padding: "16px",
           overflowY: "auto",
-          backgroundColor: "var(--surface-1)",
+          backgroundColor: "#f9fbfd",
         }}
       >
         <div
@@ -490,8 +490,8 @@ function ChatPage() {
                   top: "calc(100% + 8px)",
                   left: 0,
                   minWidth: "150px",
-                  backgroundColor: "var(--menu-bg)",
-                  border: "1px solid var(--border-strong)",
+                  backgroundColor: "white",
+                  border: "1px solid #d1d5db",
                   borderRadius: "8px",
                   boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
                   zIndex: 20,
@@ -509,7 +509,7 @@ function ChatPage() {
                     padding: "8px 10px",
                     borderRadius: "6px",
                     cursor: "pointer",
-                    color: "var(--text-h)",
+                    color: "#111827",
                     fontWeight: 600,
                   }}
                 >
@@ -519,10 +519,9 @@ function ChatPage() {
             ) : null}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, color: "var(--text-h)" }}>
+            <div style={{ fontWeight: 700, color: "#000" }}>
               {currentUserLabel}{" "}
             </div>
-            <small style={{ color: "var(--text-h)" }}>Logged in</small>
           </div>
         </div>
         <div
@@ -533,12 +532,12 @@ function ChatPage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: "var(--text-h)" }}>Chats</h2>
+            <h2 style={{ margin: 0, color: "#000" }}>Chats</h2>
           </div>
           <button onClick={handleLogout}>Uitloggen</button>
         </div>
 
-        <h3 style={{ marginBottom: "8px", color: "var(--text-h)" }}>Gesprekken</h3>
+        <h3 style={{ marginBottom: "8px", color: "#000" }}>Gesprekken</h3>
         <div>
           {conversations.map((conversation) => {
             const other = getOtherParticipant(conversation);
@@ -553,9 +552,9 @@ function ChatPage() {
                   marginBottom: "8px",
                   padding: "10px",
                   borderRadius: "8px",
-                  border: isActive ? "1px solid var(--border-primary)" : "1px solid var(--border)",
-                  backgroundColor: isActive ? "var(--accent-bg)" : "var(--surface-3)",
-                  color: "var(--text-h)",
+                  border: isActive ? "1px solid #0969da" : "1px solid #ddd",
+                  backgroundColor: isActive ? "#eaf3ff" : "white",
+                  color: "#000",
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
@@ -563,13 +562,13 @@ function ChatPage() {
               >
                 {renderAvatar(other, 34)}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                  <div style={{ fontWeight: 600, color: "#000" }}>
                     {getUserLabel(other)}
                   </div>
                   <div
                     style={{
                       fontSize: "12px",
-                      color: "var(--text)",
+                      color: "#000",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -583,7 +582,7 @@ function ChatPage() {
           })}
         </div>
 
-        <h3 style={{ marginTop: "18px", marginBottom: "8px", color: "var(--text-h)" }}>
+        <h3 style={{ marginTop: "18px", marginBottom: "8px", color: "#000" }}>
           Start nieuw gesprek
         </h3>
         <div>
@@ -597,9 +596,9 @@ function ChatPage() {
                 marginBottom: "8px",
                 padding: "10px",
                 borderRadius: "8px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--surface-3)",
-                color: "var(--text-h)",
+                border: "1px solid #ddd",
+                backgroundColor: "white",
+                color: "#000",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
@@ -610,7 +609,7 @@ function ChatPage() {
             </button>
           ))}
           {usersWithoutConversation.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
               Je hebt al met alle gebruikers een gesprek gestart.
             </p>
           ) : null}
@@ -622,7 +621,7 @@ function ChatPage() {
           <>
             <div
               style={{
-                borderBottom: "1px solid var(--border)",
+                borderBottom: "1px solid #ddd",
                 padding: "12px 16px",
                 display: "flex",
                 alignItems: "center",
@@ -636,7 +635,7 @@ function ChatPage() {
               </strong>
               <button
                 onClick={closeConversation}
-                style={{ backgroundColor: "var(--surface-3)", color: "var(--text-h)" }}
+                style={{ backgroundColor: "#f3f4f6", color: "#000" }}
               >
                 Sluit gesprek af
               </button>
@@ -648,7 +647,7 @@ function ChatPage() {
                 flex: 1,
                 overflowY: "auto",
                 padding: "16px",
-                backgroundColor: "var(--surface-2)",
+                backgroundColor: "#f2f4f8",
               }}
             >
               {loadingMessages ? <p>Berichten laden...</p> : null}
@@ -680,8 +679,8 @@ function ChatPage() {
                         maxWidth: "70%",
                         padding: "10px",
                         borderRadius: "10px",
-                        backgroundColor: isOwn ? "var(--surface-own)" : "var(--surface-3)",
-                        border: "1px solid var(--border-strong)",
+                        backgroundColor: isOwn ? "#d8ebff" : "white",
+                        border: "1px solid #d1d5db",
                         textAlign: isOwn ? "right" : "left",
                       }}
                     >
@@ -720,7 +719,7 @@ function ChatPage() {
                               fontWeight: 700,
                               textTransform: "uppercase",
                               letterSpacing: "0.04em",
-                              color: "var(--muted)",
+                              color: "#6b7280",
                               display: "flex",
                               justifyContent: isOwn ? "flex-end" : "flex-start",
                             }}
@@ -729,14 +728,14 @@ function ChatPage() {
                           </div>
                           <div style={{ marginBottom: "6px" }}>
                             {message.isDeleted ? (
-                              <em style={{ color: "var(--muted)" }}>
+                              <em style={{ color: "#6b7280" }}>
                                 Dit bericht is verwijderd
                               </em>
                             ) : (
-                              <>{message.content}</>
+                              message.content
                             )}
                           </div>
-                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                          <div style={{ fontSize: "12px", color: "#555" }}>
                             Verzonden: {formatDate(message.createdAt)}
                             {message.editedAt
                               ? ` | Bewerkt: ${formatDate(message.editedAt)}`
@@ -745,20 +744,7 @@ function ChatPage() {
                               ? ` | ${isReadByOther ? "Gelezen" : "Verzonden"}`
                               : ""}
                           </div>
-                          <div
-                            style={{
-                              marginBottom: "6px",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.04em",
-                              color: "var(--muted)",
-                              display: "flex",
-                              justifyContent: isOwn ? "flex-end" : "flex-start",
-                            }}
-                          >
-                            {getMessageSenderLabel(message)}
-                          </div>
+                          
                         </>
                       )}
 
@@ -793,7 +779,7 @@ function ChatPage() {
             <form
               onSubmit={sendMessage}
               style={{
-                borderTop: "1px solid var(--border)",
+                borderTop: "1px solid #ddd",
                 padding: "12px",
                 display: "flex",
                 gap: "8px",
@@ -810,8 +796,10 @@ function ChatPage() {
             </form>
           </>
         ) : (
-          <div style={{ padding: "30px" }}>
-            <h2>Welkom in je chatapp</h2>
+          <div style={{ padding: "30px",
+            backgroundColor: "#f2f4f8", flex: 1, textAlign: "center", color: "#6b7280"
+          }}>
+            <h2 style={{ color: "#1f2937" }}>Welkom in je chatapp</h2>
             <p>
               Kies een bestaand gesprek of start een nieuw gesprek vanuit de
               linkerzijde.
@@ -823,9 +811,9 @@ function ChatPage() {
           <div
             style={{
               padding: "10px 16px",
-              color: "var(--danger-text)",
-              borderTop: "1px solid var(--danger-border)",
-              backgroundColor: "var(--danger-bg)",
+              color: "#b91c1c",
+              borderTop: "1px solid #fecaca",
+              backgroundColor: "#fef2f2",
             }}
           >
             {error}
