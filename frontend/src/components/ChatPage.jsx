@@ -30,18 +30,18 @@ function ChatPage() {
   );
 
   const formatDate = (isoValue) => {
-  if (!isoValue) {
-    return "";
-  }
+    if (!isoValue) {
+      return "";
+    }
 
-  return new Date(isoValue).toLocaleString("nl-NL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+    return new Date(isoValue).toLocaleString("nl-NL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const loadUsers = async () => {
     const response = await fetch(`${API_BASE}/chat/users`, {
@@ -111,14 +111,33 @@ function ChatPage() {
     const data = await response.json();
     setMessages(data);
     setLoadingMessages(false);
+    return data;
+  };
 
+  const markConversationAsRead = async (conversationId, messageId) => {
+    const response = await fetch(
+      `${API_BASE}/chat/conversations/${conversationId}/messages/${messageId}/read`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        credentials: "include",
+      },
+    );
+    if (!response.ok) {
+      throw new Error("Berichten markeren als gelezen mislukt");
+    }
   };
 
   const scrollToBottom = (smooth = false) => {
     const el = messagesContainerRef.current;
     if (!el) return;
     try {
-      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: smooth ? "smooth" : "auto",
+      });
     } catch (e) {
       el.scrollTop = el.scrollHeight;
     }
@@ -139,7 +158,7 @@ function ChatPage() {
     };
 
     bootstrap();
-      }, [accessToken]);
+  }, [accessToken]);
 
   useEffect(() => {
     if (!activeConversation?._id) {
@@ -150,6 +169,10 @@ function ChatPage() {
     const hydrateMessages = async () => {
       try {
         setError(null);
+        const loadedMessages = await loadMessages(activeConversation._id);
+        const messageIdToMark =
+          loadedMessages.at(-1)?._id || activeConversation._id;
+        await markConversationAsRead(activeConversation._id, messageIdToMark);
         await loadMessages(activeConversation._id);
       } catch (err) {
         setError(err.message);
@@ -268,7 +291,6 @@ function ChatPage() {
     }
   };
 
-
   const getOtherParticipant = (conversation) => {
     return conversation.participants.find(
       (participant) =>
@@ -332,7 +354,7 @@ function ChatPage() {
     );
   };
 
-    const getMessageSenderLabel = (message) => {
+  const getMessageSenderLabel = (message) => {
     const isOwn =
       message.sender?._id === user?._id || message.sender?._id === user?.id;
     return isOwn ? "Jij" : getUserLabel(message.sender);
@@ -364,8 +386,6 @@ function ChatPage() {
   const currentUserLabel = useMemo(() => {
     return getUserLabel(user);
   }, [user]);
-
-
 
   const handleLogout = async () => {
     try {
@@ -660,10 +680,7 @@ function ChatPage() {
                   message.sender?._id === user?._id ||
                   message.sender?._id === user?.id;
                 const isEditing = editingMessageId === message._id;
-                const isReadByOther =
-                  activeConversation.participants.length > 1
-                    ? message.readBy?.length >= 2
-                    : message.readBy?.length > 0;
+                const isReadByOther = (message.readBy?.length || 0) > 0;
 
                 return (
                   <div
@@ -712,7 +729,7 @@ function ChatPage() {
                         </>
                       ) : (
                         <>
-                        <div
+                          <div
                             style={{
                               marginBottom: "6px",
                               fontSize: "11px",
@@ -744,7 +761,6 @@ function ChatPage() {
                               ? ` | ${isReadByOther ? "Gelezen" : "Verzonden"}`
                               : ""}
                           </div>
-                          
                         </>
                       )}
 
@@ -796,9 +812,15 @@ function ChatPage() {
             </form>
           </>
         ) : (
-          <div style={{ padding: "30px",
-            backgroundColor: "#f2f4f8", flex: 1, textAlign: "center", color: "#6b7280"
-          }}>
+          <div
+            style={{
+              padding: "30px",
+              backgroundColor: "#f2f4f8",
+              flex: 1,
+              textAlign: "center",
+              color: "#6b7280",
+            }}
+          >
             <h2 style={{ color: "#1f2937" }}>Welkom in je chatapp</h2>
             <p>
               Kies een bestaand gesprek of start een nieuw gesprek vanuit de

@@ -1,45 +1,45 @@
-import mongoose from "mongoose";  
+import mongoose from "mongoose";
 
-
-const messageSchema = new mongoose.Schema({
+const messageSchema = new mongoose.Schema(
+  {
     conversation: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Conversation",
-        required: true,
-    }, 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Conversation",
+      required: true,
+    },
     sender: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     content: {
-        type: String,
-        default: null,
-        trim: true,
-        maxLength: 2000,
+      type: String,
+      default: null,
+      trim: true,
+      maxLength: 2000,
     },
     editedAt: {
-        type: Date,
-        default: null,
+      type: Date,
+      default: null,
     },
     deletedAt: {
-        type: Date,
-        default: null,
+      type: Date,
+      default: null,
     },
     isDeleted: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
     readBy: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        }
-    ]
-},
-{
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+  },
+  {
     timestamps: true,
-}
+  },
 );
 
 messageSchema.index({ conversation: 1, createdAt: 1 });

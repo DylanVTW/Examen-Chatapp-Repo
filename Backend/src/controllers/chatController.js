@@ -67,85 +67,98 @@ export const listConversations = async (req, res) => {
       .populate("participants", "_id username email profileImage")
       .sort({ lastMessageAt: -1 });
 
-    const withLastMessage = conversations.map((conversation) => ({
-      ...conversation.toObject(),
-      lastMessage: null,
-    }));
+    const withLastMessage = await Promise.all(
+      conversations.map(async (conversation) => {
+        const lastMessage = await Message.findOne({
+          conversation: conversation._id,
+        })
+          .populate("sender", "_id username email profileImage")
+          .sort({ createdAt: -1 });
+
+        return {
+          ...conversation.toObject(),
+          lastMessage,
+        };
+      }),
+    );
     res.status(200).json(withLastMessage);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };
 
-export const deleteConversation =  async (req, res) => {
-    try {
-        const { conversationId } = req.params;
+export const deleteConversation = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
 
-        const conversation = await ensureParticipants(conversationId, req.user.id);
-        if (!conversation) {
-            return res.status(404).json({ message: "Gesprek niet gevonden" });
-        }
-
-        await Conversation.findByIdAndDelete(conversationId);
-
-        res.status(200).json({ message: "Gesprek verwijderd" });
-    } catch (error) {
-        res.status(500).json({ message: "Server error" });
+    const conversation = await ensureParticipants(conversationId, req.user.id);
+    if (!conversation) {
+      return res.status(404).json({ message: "Gesprek niet gevonden" });
     }
+
+    await Conversation.findByIdAndDelete(conversationId);
+
+    res.status(200).json({ message: "Gesprek verwijderd" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const getMessages = async (req, res) => {
-    try {
-        const { conversationId } = req.params;
+  try {
+    const { conversationId } = req.params;
 
-        const conversation = await ensureParticipants(conversationId, req.user.id);
-        if (!conversation) {
-            return res.status(404).json({ message: "Gesprek niet gevonden" });
-        }
-
-        const messages = await Message.find({ conversation: conversationId })
-          .populate("sender", "_id username email profileImage")
-          .sort({ createdAt: 1 });
-
-        res.status(200).json(messages);
-    } catch (error) {
-        res.status(500).json({ message: "Server error" });
+    const conversation = await ensureParticipants(conversationId, req.user.id);
+    if (!conversation) {
+      return res.status(404).json({ message: "Gesprek niet gevonden" });
     }
+
+    const messages = await Message.find({ conversation: conversationId })
+      .populate("sender", "_id username email profileImage")
+      .sort({ createdAt: 1 });
+
+    res.status(200).json(messages);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const sendMessage = async (req, res) => {
-    try {
-        const { conversationId } = req.params;
-        const { content } = req.body;
-        const trimmedContent = typeof content === "string" ? content.trim() : "";
+  try {
+    const { conversationId } = req.params;
+    const { content } = req.body;
+    const trimmedContent = typeof content === "string" ? content.trim() : "";
 
-        if (!trimmedContent) {
-            return res.status(400).json({ message: "Bericht mag niet leeg zijn" });
-        }
-
-        const conversation = await ensureParticipants(conversationId, req.user.id);
-        if (!conversation) {
-            return res.status(404).json({ message: "Gesprek niet gevonden" });
-        }
-
-        const message = await Message.create({
-            conversation: conversationId,
-            sender: req.user._id,
-            content: trimmedContent,
-        });
-
-        conversation.lastMessageAt = new Date();
-        await conversation.save();
-
-        const populated = await Message.findById(message._id).populate("sender", "_id username email profileImage");
-        res.status(201).json(populated);
-    } catch (error) {
-        res.status(500).json({ message: "Server error" });
+    if (!trimmedContent) {
+      return res.status(400).json({ message: "Bericht mag niet leeg zijn" });
     }
+
+    const conversation = await ensureParticipants(conversationId, req.user.id);
+    if (!conversation) {
+      return res.status(404).json({ message: "Gesprek niet gevonden" });
+    }
+
+    const message = await Message.create({
+      conversation: conversationId,
+      sender: req.user._id,
+      content: trimmedContent,
+    });
+
+    conversation.lastMessageAt = new Date();
+    await conversation.save();
+
+    const populated = await Message.findById(message._id).populate(
+      "sender",
+      "_id username email profileImage",
+    );
+    res.status(201).json(populated);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const editMessage = async (req, res) => {
-   try {
+  try {
     const { conversationId, messageId } = req.params;
     const { content } = req.body;
     const trimmedContent = typeof content === "string" ? content.trim() : "";
@@ -159,24 +172,29 @@ export const editMessage = async (req, res) => {
       return res.status(404).json({ message: "Gesprek niet gevonden" });
     }
 
-    const message =  await Message.findById(messageId);
+    const message = await Message.findById(messageId);
     if (!message || String(message.conversation) !== String(conversationId)) {
       return res.status(404).json({ message: "Bericht niet gevonden" });
-    } 
+    }
 
-    if(String(message.sender) !== String(req.user._id)) {
-      return res.status(403).json({ message: "Je kunt alleen je eigen berichten bewerken" });
+    if (String(message.sender) !== String(req.user._id)) {
+      return res
+        .status(403)
+        .json({ message: "Je kunt alleen je eigen berichten bewerken" });
     }
 
     message.content = trimmedContent;
     message.editedAt = new Date();
     await message.save();
 
-    const populated = await Message.findById(message._id).populate("sender", "_id username email profileImage");
+    const populated = await Message.findById(message._id).populate(
+      "sender",
+      "_id username email profileImage",
+    );
     res.status(200).json(populated);
-   } catch (error) {
+  } catch (error) {
     res.status(500).json({ message: "Server error" });
-   }
+  }
 };
 
 export const deleteMessage = async (req, res) => {
@@ -194,7 +212,9 @@ export const deleteMessage = async (req, res) => {
     }
 
     if (String(message.sender) !== String(req.user._id)) {
-      return res.status(403).json({ message: "Je kunt alleen je eigen berichten verwijderen" });
+      return res
+        .status(403)
+        .json({ message: "Je kunt alleen je eigen berichten verwijderen" });
     }
 
     if (message.isDeleted) {
@@ -210,7 +230,7 @@ export const deleteMessage = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 export const markMessageRead = async (req, res) => {
   try {
@@ -237,6 +257,3 @@ export const markMessageRead = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
-

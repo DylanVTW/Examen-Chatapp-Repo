@@ -9,7 +9,7 @@ import {
   sendMessage,
   editMessage,
   deleteMessage,
-  markMessageRead
+  markMessageRead,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
@@ -23,7 +23,13 @@ router.delete("/conversations/:conversationId", deleteConversation);
 router.get("/conversations/:conversationId/messages", getMessages);
 router.post("/conversations/:conversationId/messages", sendMessage);
 router.patch("/conversations/:conversationId/messages/:messageId", editMessage);
-router.delete("/conversations/:conversationId/messages/:messageId", deleteMessage);
-router.post("/conversations/:conversationId/messages/:messageId/read", markMessageRead);
+router.delete(
+  "/conversations/:conversationId/messages/:messageId",
+  deleteMessage,
+);
+router.post(
+  "/conversations/:conversationId/messages/:messageId/read",
+  markMessageRead,
+);
 
 export default router;

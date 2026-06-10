@@ -27,7 +27,9 @@ function ProfileAvatar() {
         transition: "background-color 0.2s",
       }}
       onClick={handleProfileClick}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.backgroundColor = "var(--surface-2)")
+      }
       onMouseLeave={(e) =>
         (e.currentTarget.style.backgroundColor = "transparent")
       }

@@ -1,62 +1,73 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import ProfileImageUpload from './ProfileImageUpload';
-
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import ProfileImageUpload from "./ProfileImageUpload";
 
 function UserProfile() {
-    const { user, accessToken} = useAuth();
-    const navigate = useNavigate();
-    const [profileUser, setProfileUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { user, accessToken } = useAuth();
+  const navigate = useNavigate();
+  const [profileUser, setProfileUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    useEffect(() => {
-        const fetchProfile = async () => {
-            if (!accessToken) {
-                setError('Geen toegangstoken gevonden. Log alstublieft in.');
-                setLoading(false);
-                return;
-            }
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!accessToken) {
+        setError("Geen toegangstoken gevonden. Log alstublieft in.");
+        setLoading(false);
+        return;
+      }
 
-            try {
-                const response = await fetch('/api/auth/profile', {
-                    method: 'GET',
-                    headers: {
-                        "Authorization": `Bearer ${accessToken}`,
-                    },
-                    credentials: 'include',
-                });
+      try {
+        const response = await fetch("/api/auth/profile", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          credentials: "include",
+        });
 
-                const data = await response.json();
+        const data = await response.json();
 
-                if (!response.ok) {
-                    setError(data.message || 'Fout bij het ophalen van profielgegevens');
-                    setLoading(false);
-                    return;
-                }
-
-                setProfileUser(data.user || data);
-                setLoading(false);
-        } catch (error) {
-            setError('Server error: ' + error.message);
-            setLoading(false);
+        if (!response.ok) {
+          setError(data.message || "Fout bij het ophalen van profielgegevens");
+          setLoading(false);
+          return;
         }
+
+        setProfileUser(data.user || data);
+        setLoading(false);
+      } catch (error) {
+        setError("Server error: " + error.message);
+        setLoading(false);
+      }
     };
     fetchProfile();
-}, [accessToken, refreshTrigger]);
+  }, [accessToken, refreshTrigger]);
 
-if (loading) {
-    return <div style={{padding: "20px", color: "#000", backgroundColor: "#fff"}}>Laden...</div>;
-}
+  if (loading) {
+    return (
+      <div style={{ padding: "20px", color: "#000", backgroundColor: "#fff" }}>
+        Laden...
+      </div>
+    );
+  }
 
-if (error) {
-    return <div style={{padding: "20px", color: "red"}}>{error}</div>;
-}
+  if (error) {
+    return <div style={{ padding: "20px", color: "red" }}>{error}</div>;
+  }
 
-return (
-    <div style={{ maxWidth: "600px", margin: "50px auto", padding: "20px", backgroundColor: "#fff", color: "#000" }}>
+  return (
+    <div
+      style={{
+        maxWidth: "600px",
+        margin: "50px auto",
+        padding: "20px",
+        backgroundColor: "#fff",
+        color: "#000",
+      }}
+    >
       <h1 style={{ color: "#000" }}>Mijn Profiel</h1>
       <button
         onClick={() => navigate("/chat")}
@@ -95,7 +106,6 @@ return (
                 borderRadius: "8px",
                 marginBottom: "20px",
                 border: "1px solid #000",
-                
               }}
             />
           ) : (
@@ -137,9 +147,7 @@ return (
         </div>
       )}
     </div>
-);
-    
+  );
 }
-
 
 export default UserProfile;
