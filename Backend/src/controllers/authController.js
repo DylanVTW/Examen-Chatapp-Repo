@@ -147,11 +147,9 @@ export const uploadProfileImage = async (req, res) => {
 
     if (!profileImageUrl) {
       console.error("Kon de URL van de geüploade afbeelding niet vinden");
-      return res
-        .status(400)
-        .json({
-          message: "Kon de URL van de geüploade afbeelding niet vinden",
-        });
+      return res.status(400).json({
+        message: "Kon de URL van de geüploade afbeelding niet vinden",
+      });
     }
 
     const user = await User.findByIdAndUpdate(

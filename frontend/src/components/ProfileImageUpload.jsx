@@ -111,7 +111,11 @@ function ProfileImageUpload({ onUploadSuccess }) {
 
   return (
     <div
-      style={{ padding: "20px", border: "1px solid var(--border)", borderRadius: "8px" }}
+      style={{
+        padding: "20px",
+        border: "1px solid var(--border)",
+        borderRadius: "8px",
+      }}
     >
       <h3>Profielfoto uploaden</h3>
 
@@ -138,7 +142,11 @@ function ProfileImageUpload({ onUploadSuccess }) {
           )}
         </div>
 
-        {error && <p style={{ color: "var(--danger-text)", marginBottom: "15px" }}>{error}</p>}
+        {error && (
+          <p style={{ color: "var(--danger-text)", marginBottom: "15px" }}>
+            {error}
+          </p>
+        )}
         {success && (
           <p style={{ color: "var(--button-primary)", marginBottom: "15px" }}>
             Profielfoto succesvol geupload!
@@ -150,7 +158,10 @@ function ProfileImageUpload({ onUploadSuccess }) {
           disabled={!selectedFile || uploading}
           style={{
             padding: "10px 20px",
-            backgroundColor: !selectedFile || uploading ? "var(--button-disabled)" : "var(--button-primary)",
+            backgroundColor:
+              !selectedFile || uploading
+                ? "var(--button-disabled)"
+                : "var(--button-primary)",
             color: "var(--button-primary-text)",
             border: "none",
             borderRadius: "4px",

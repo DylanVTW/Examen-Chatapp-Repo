@@ -21,13 +21,13 @@ export const validateRegister = [
     .withMessage("Username is verplicht")
     .isLength({ min: 2 })
     .withMessage("Username moet minimaal 2 tekens bevatten"),
-    body("email")
+  body("email")
     .trim()
     .notEmpty()
     .withMessage("Email is verplicht")
     .isEmail()
     .withMessage("Voeg een geldig emailadres in"),
-    body("password")
+  body("password")
     .notEmpty()
     .withMessage("Wachtwoord is verplicht")
     .isLength({ min: 8 })
@@ -35,13 +35,11 @@ export const validateRegister = [
 ];
 
 export const validateLogin = [
-    body("email")
+  body("email")
     .trim()
     .notEmpty()
     .withMessage("Email is verplicht")
     .isEmail()
     .withMessage("Voeg een geldig emailadres in"),
-    body("password")
-    .notEmpty()
-    .withMessage("Wachtwoord is verplicht"),
-]
+  body("password").notEmpty().withMessage("Wachtwoord is verplicht"),
+];
